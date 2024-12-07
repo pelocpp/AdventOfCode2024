@@ -5,12 +5,14 @@
 void puzzle_01();
 void puzzle_02();
 void puzzle_03();
+void puzzle_04();
 
 int main()
 {
     //puzzle_01();
     //puzzle_02();
-    puzzle_03();
+    //puzzle_03();
+    puzzle_04();
 
     return 0;
 }

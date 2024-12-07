@@ -30,11 +30,21 @@
     <ClCompile Include="Puzzle03.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Puzzle04.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Puzzle02_Data.txt">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="Puzzle03_Data.txt" />
+    <None Include="Puzzle03_Data.txt">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Puzzle04_Data.txt">
+      <Filter>Source Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>

@@ -133,12 +133,16 @@
     <ClCompile Include="Puzzle01_Data.cpp" />
     <ClCompile Include="Puzzle02.cpp" />
     <ClCompile Include="Puzzle03.cpp" />
+    <ClCompile Include="Puzzle04.cpp" />
     <None Include="Puzzle02_Data.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Puzzle03_Data.txt">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Puzzle04_Data.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
