@@ -134,6 +134,7 @@
     <ClCompile Include="Puzzle02.cpp" />
     <ClCompile Include="Puzzle03.cpp" />
     <ClCompile Include="Puzzle04.cpp" />
+    <ClCompile Include="Puzzle05.cpp" />
     <None Include="Puzzle02_Data.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -143,6 +144,8 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Puzzle04_Data.txt" />
+    <None Include="Puzzle05_Data.txt" />
+    <Text Include="Puzzle05_TestData.txt" />
     <Text Include="Scratch.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
