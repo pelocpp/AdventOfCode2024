@@ -2,28 +2,35 @@
 // Puzzle05.cpp
 // ===========================================================================
 
+#include <algorithm>
 #include <fstream>
 #include <list>
 #include <print>
+#include <regex>
 #include <set>
+#include <vector>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
-#include <vector>
 
 // ===========================================================================
 // global data
 
-static std::unordered_map<int, std::unordered_set<int>> g_rules;
+static std::unordered_map<int, std::set<int>> g_rules;
+static std::vector<std::list<int>> g_updates;
 
 std::string g_filenameTestData{ "Puzzle05_TestData.txt"};
 std::string g_filenameData{ "Puzzle05_Data.txt" };
 
 // ===========================================================================
+// forward declarations
+
+static void parseUpdateLine(const std::string& line, std::list<int>& list);
+static bool verifyUpdate(const std::list<int>& list);
+
+// ===========================================================================
 // input
 
-// 
-static void puzzle_05_read_data(const std::string& fileName)
+static void puzzle_05_parse_data(const std::string& fileName)
 {
     std::ifstream file{ fileName };
 
@@ -40,7 +47,7 @@ static void puzzle_05_read_data(const std::string& fileName)
                 break;
             }
 
-            std::println("Rule: {}", line);
+            // std::println("Rule: {}", line);
 
             // retrieve two page numbers
             std::string spage1 = line.substr(0, 2);
@@ -49,7 +56,7 @@ static void puzzle_05_read_data(const std::string& fileName)
             int page1 = std::stoi(spage1);
             int page2 = std::stoi(spage2);
 
-            std::unordered_map<int, std::unordered_set<int>>::iterator pos;
+            std::unordered_map<int, std::set<int>>::iterator pos;
 
             pos = g_rules.find(page1);
 
@@ -63,7 +70,7 @@ static void puzzle_05_read_data(const std::string& fileName)
             else {
 
                 // key not yet present - insert first set of rules
-                std::unordered_set<int> set{ page2 };
+                std::set<int> set{ page2 };
                 g_rules.insert(std::make_pair(page1, set));
             }
         }
@@ -72,6 +79,10 @@ static void puzzle_05_read_data(const std::string& fileName)
         while (std::getline(file, line)) {
 
             std::println("Update: {}", line);
+
+            std::list<int> list{};
+            parseUpdateLine(line, list);
+            g_updates.push_back(list);
         }
 
         file.close();
@@ -80,17 +91,87 @@ static void puzzle_05_read_data(const std::string& fileName)
 
         std::println("Unable to open file {} !", fileName);
     }
-
-   // return data;
 }
 
+static void parseUpdateLine(const std::string& line, std::list<int>& list)
+{
+    std::regex expression{ "([1-9][0-9]+)" };
+
+    auto first = std::sregex_iterator(
+        line.begin(),
+        line.end(),
+        expression
+    );
+
+    auto iterator{ first };
+
+    while (iterator != std::sregex_iterator{}) {
+
+        const auto& token = *iterator;
+        // std::println("Found Token: {}", token.str());
+
+        // add "page number" to list
+        list.push_back(std::stoi (token.str()));
+
+        ++iterator;
+    }
+
+    std::ptrdiff_t const count{
+        std::distance(first, std::sregex_iterator{})
+    };
+
+    std::println("Count: {}", count);
+}
+
+// ===========================================================================
+// logic
+
+static bool verifyUpdate(const std::list<int>& list)
+{
+    auto pos = std::adjacent_find(
+
+        list.begin(),
+        list.end(),
+        [](int n, int m){
+
+            std::println("n: {} - m: {}", n, m);
+
+            // retrieve list of rules for page n
+            const auto& rules = g_rules[n];
+
+            // search for m
+            if (!rules.contains(m)) {
+
+                // proceed to next pair of page numbers
+
+                std::println("Found rule n|m !", n, m);
+
+                return false;
+            }
+            else {
+
+                // no rule found - abort this verification
+
+                std::println("ERROR: No rule for n|m found !", n, m);
+
+                return true;
+            }
+        }
+    );
+
+    return (pos == list.end()) ? true : false;
+}
 
 // ===========================================================================
 // main
 
 void puzzle_05()
 {
-    puzzle_05_read_data(g_filenameTestData);
+    puzzle_05_parse_data(g_filenameTestData);
+
+    const auto& testList = g_updates[0];
+
+    verifyUpdate(testList);
 }
 
 // ===========================================================================
