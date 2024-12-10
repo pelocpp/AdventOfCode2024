@@ -2,17 +2,12 @@
 // Puzzle05.cpp
 // ===========================================================================
 
-#include <algorithm>
 #include <array>
 #include <cassert>
 #include <fstream>
-#include <list>
+#include <iostream>
 #include <print>
-#include <regex>
-#include <set>
 #include <string>
-#include <unordered_map>
-#include <vector>
 
 // ===========================================================================
 // global data
@@ -48,27 +43,140 @@ private:
     Direction m_currentDirection;
 
 public:
-    Guard() : m_row{}, m_col{}, m_currentDirection{ Upwards }  {}
+    Guard() : m_row{}, m_col{}, m_currentDirection{ Direction::Upwards }  {}
 
-    bool canMove();
+    bool canMove() {
 
-    bool leavingMap();
+        // is there any abstacle in front of the guard
+        if (m_currentDirection == Direction::Upwards) {
 
-    void doMove();
-
-    void changeDirection();
-
-    void printBoard() {
-
-        for (const auto& row : m_board) {
-
-            for (char ch : row) {
-                std::print("{}", ch);
+            if (m_board[m_row - 1][m_col] == '#') {
+                return false;
             }
+        }
+        else if (m_currentDirection == Direction::ToTheRight) {
 
-            std::println();
+            if (m_board[m_row][m_col + 1] == '#') {
+                return false;
+            }
+        }
+        else if (m_currentDirection == Direction::Downwards) {
+
+            if (m_board[m_row + 1][m_col] == '#') {
+                return false;
+            }
+        }
+        else if (m_currentDirection == Direction::ToTheLeft) {
+
+            if (m_board[m_row][m_col - 1] == '#') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool isLeavingMap() {
+
+        // is leaving map
+        if (m_currentDirection == Direction::Upwards) {
+
+            if (m_row == 0) {
+                return true;
+            }
+        }
+        else if (m_currentDirection == Direction::ToTheRight) {
+
+            if (m_col == Size - 1) {
+                return true;
+            }
+        }
+        else if (m_currentDirection == Direction::Downwards) {
+
+            if (m_row == Size - 1) {
+                return true;
+            }
+        }
+        else if (m_currentDirection == Direction::ToTheLeft) {
+
+            if (m_col == 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void advanceGuard() {
+
+        // place 'X' on current position
+        m_board[m_row][m_col] = 'X';
+
+        // move guard one position and set guard's icon
+        if (m_currentDirection == Direction::Upwards) {
+            --m_row;
+            m_board[m_row][m_col] = '^';
+        }
+        else if (m_currentDirection == Direction::ToTheRight) {
+            ++m_col;
+            m_board[m_row][m_col] = '>';
+        }
+        else if (m_currentDirection == Direction::Downwards) {
+            ++m_row;
+            m_board[m_row][m_col] = 'v';
+        }
+        else if (m_currentDirection == Direction::ToTheLeft) {
+            --m_col;
+            m_board[m_row][m_col] = '<';
         }
     }
+
+    void play() {
+
+        while (true) {
+
+            if (isLeavingMap()) {
+
+                // end of puzzle reached
+                break;
+            }
+
+            if (!canMove()) {
+
+                // reached obstacle, need to change direction
+                changeDirection();
+            }
+            else {
+
+                // just advance one step in the current direction
+                advanceGuard();
+            }
+
+            // testing
+            std::println("Press any key ...");
+            char ch;
+            std::cin >> ch;
+
+            printBoard();
+        }
+    }
+
+    void changeDirection() {
+
+        if (m_currentDirection == Direction::Upwards) {
+            m_currentDirection = Direction::ToTheRight;
+        }
+        else if (m_currentDirection == Direction::ToTheRight) {
+            m_currentDirection = Direction::Downwards;
+        }
+        else if (m_currentDirection == Direction::Downwards) {
+            m_currentDirection = Direction::ToTheLeft;
+        }
+        else if (m_currentDirection == Direction::ToTheLeft) {
+            m_currentDirection = Direction::Upwards;
+        }
+    }
+
 
     void initBoardFromFile(const std::string& filename) {
 
@@ -113,6 +221,18 @@ public:
             std::println("Unable to open file {} !", filename);
         }
     }
+
+    void printBoard() {
+
+        for (const auto& row : m_board) {
+
+            for (char ch : row) {
+                std::print("{}", ch);
+            }
+
+            std::println();
+        }
+    }
 };
 
 // ===========================================================================
@@ -124,6 +244,9 @@ static void puzzle_06_first_run()
 
     testGuard.initBoardFromFile(g_filenameTestData);
     testGuard.printBoard();
+    testGuard.play();
+
+
 }
 
 
