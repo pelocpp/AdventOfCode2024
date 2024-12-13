@@ -7,10 +7,11 @@
 #include <fstream>
 #include <iostream>
 #include <print>
-#include <stack>
 #include <queue>
+#include <sstream>
+#include <stack>
+#include <vector>
 #include <string>
-#include <regex>
 
 // https://www.geeksforgeeks.org/binary-tree-in-cpp/
 // 
@@ -26,8 +27,19 @@ static std::string g_filenameRealData{ "Puzzle07_RealData.txt" };
 // ===========================================================================
 // types
 
+struct Equation
+{
+    size_t           m_value{};
+    std::vector<int> m_operands{};
+};
+
+static std::vector<Equation> g_equations{};
+
 // ===========================================================================
 // forward declarations
+
+static void readPuzzleFromFile(const std::string& filename);
+static void puzzle_07_parseLine(const std::string& line, Equation& equation);
 
 // ===========================================================================
 // input & output
@@ -47,7 +59,11 @@ static void readPuzzleFromFile(const std::string& filename) {
                 break;
             }
 
-            std::println("Line: {} !", line);
+            //std::println("Line: {} !", line);
+
+            Equation equation;
+            puzzle_07_parseLine(line, equation);
+            g_equations.push_back(equation);
         }
 
         file.close();
@@ -58,142 +74,48 @@ static void readPuzzleFromFile(const std::string& filename) {
     }
 }
 
-static void puzzle_07_parseLine_regex(const std::string& line)
+static void puzzle_07_parseLine(const std::string& line, Equation& equation)
 {
-    // simple example - counting the number of all matches
+    std::string delimiter{ ":" };
+    size_t pos{ line.find(delimiter) };
+    std::string token{ line.substr(0, pos) };
 
-    std::regex expression{ "([1-9][0-9]+):(\\s[1-9][0-9]+)*" };
+    // convert std::string to size_t
+    std::istringstream iss{ token };
+    iss >> equation.m_value;
 
-  //  std::string text = { "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))" };
-
-    int result{};
-
-    auto first = std::sregex_iterator(
-        line.begin(),
-        line.end(),
-        expression
-    );
-
-    auto iterator{ first };
-
-    while (iterator != std::sregex_iterator{}) {
-
-        const auto& token = *iterator;
-        std::println("Found Token: {} - Size: {}", token.str(), token.size());
-
-        //for (size_t i{}; i < token.size(); ++i) {
-        //    std::println("{}: '{}'", i, token[i].str());
-        //}
-
-        ++iterator;
-    }
-
-    //std::ptrdiff_t const count{
-    //    std::distance(first, std::sregex_iterator{})
-    //};
-
-    //std::println("Total Result: {}", result);
-
-    //std::println("Count: {}", count);
-}
-
-
-static void puzzle_07_parseLine(const std::string& line)
-{
-  //  std::string s = "scott>=tiger";
-    std::string delimiter = ":";
-    size_t pos = line.find(delimiter);
-    std::string token = line.substr(0, pos); 
-
-    std::println("First Token: {}", token);
-
-    // std::string tail = line.substr(line.size() - pos);
-    std::string tail = line.substr(pos+2);
+    std::string tail{ line.substr(pos + 2) };
     delimiter = " ";
+    int operand{};
 
     while ((pos = tail.find(delimiter)) != std::string::npos) {
+
         token = tail.substr(0, pos);
+        operand = std::stoi(token);
+        equation.m_operands.push_back(operand);
 
-        std::println("Another Token: {}", token);
-
-        //tokens.push_back(token);
         tail.erase(0, pos + 1);
     }
 
-    std::println("Last Token: {}", tail);
+    operand = std::stoi(tail);
+    equation.m_operands.push_back(operand);
 }
 
 // ===========================================================================
 // types / logic
 
-class Node {
-public:
-    size_t m_data;
-    Node*  m_left;
-    Node*  m_right;
-
-    Node(size_t value) : m_data{ value }, m_left{ nullptr }, m_right{ nullptr } {}
-};
-
-class BinaryTree {
-private:
-    Node* m_root;
-
-public:
-    BinaryTree() : m_root{ nullptr } {}
-
-    // Function to insert a node in the binary tree 
-    void insertNode(size_t value) {
-
-        Node* node = new Node(value);
-
-        if (m_root == nullptr) {
-            m_root = node;
-            return;
-        }
-
-        std::queue<Node*> q;
-        q.push(m_root);
-
-        while (!q.empty()) {
-            Node* current = q.front();
-            q.pop();
-
-            if (current->m_left == nullptr) {
-                current->m_left = node;
-                return;
-            }
-            else {
-                q.push(current->m_left);
-            }
-
-            if (current->m_right == nullptr) {
-                current->m_right = node;
-                return;
-            }
-            else {
-                q.push(current->m_right);
-            }
-        }
-    }
-
-    void inorderRecursive(Node* node)
-    {
-        if (node != nullptr) {
-            inorderRecursive(node->m_left);
-            std::print("{} ", node->m_data);
-            inorderRecursive(node->m_right);
-        }
-    }
-
-    void inorder() {
-        inorderRecursive(m_root);
-        std::println();
-    }
-};
-
 class SimpleBinaryTree
 {
+private:
+    class Node {
+    public:
+        size_t m_data;
+        Node* m_left;
+        Node* m_right;
+
+        Node(size_t value) : m_data{ value }, m_left{ nullptr }, m_right{ nullptr } {}
+    };
+
 private:
     Node* m_root;
 
@@ -244,13 +166,192 @@ public:
             node = stack.top();
             stack.pop();
 
+            //if (node->m_left == nullptr && node->m_right == nullptr) {
+            //}
+
+            if (node->m_right != nullptr) {
+                stack.push(node->m_right);
+            }
+
+            if (node->m_left != nullptr) {
+                stack.push(node->m_left);
+            }
+        }
+    }
+
+    std::vector<size_t> getLeaveNodes()
+    {
+        std::vector<size_t> leaveNodes{};
+
+        getLeaveNodesInternal(m_root, leaveNodes);
+
+        return leaveNodes;
+    }
+
+   void getLeaveNodesInternal(Node* node, std::vector<size_t>& values)
+    {
+        if (node == nullptr) {
+            return;
+        }
+
+        std::stack<Node*> stack;
+        stack.push(node);
+
+        while (!stack.empty()) {
+
+            node = stack.top();
+            stack.pop();
+
             if (node->m_left == nullptr && node->m_right == nullptr) {
 
-                std::println("Found leave: {}", node->m_data);
+                values.push_back(node->m_data);
             }
 
             if (node->m_right != nullptr) {
                 stack.push(node->m_right);
+            }
+
+            if (node->m_left != nullptr) {
+                stack.push(node->m_left);
+            }
+        }
+    }
+};
+
+// ===========================================================================================
+
+class SimpleTernaryTree
+{
+private:
+    class Node {
+    public:
+        size_t m_data;
+
+        Node* m_left;
+        Node* m_middle;
+        Node* m_right;
+
+        Node(size_t value) : m_data{ value }, m_left{ nullptr }, m_middle{ nullptr },  m_right { nullptr } {}
+    };
+
+private:
+    Node* m_root;
+
+public:
+    SimpleTernaryTree() : m_root{ nullptr } {}
+
+    void inorderInsert(size_t elem)
+    {
+        if (m_root == nullptr) {
+            m_root = new Node{ elem };
+        }
+        else
+        {
+            inorderInsertRecursive(m_root, elem);
+        }
+    }
+
+    size_t concatenate(size_t first, size_t second) {
+
+        std::string s1{ std::to_string(first) };
+        std::string s2{ std::to_string(second) };
+
+        // convert std::string to size_t
+        std::istringstream iss{ s1 + s2 };
+        size_t result{};
+        iss >> result;
+        return result;
+    }
+
+    void inorderInsertRecursive(Node* node, size_t elem)
+    {
+        if (node->m_left != nullptr && node->m_middle != nullptr && node->m_right != nullptr)
+        {
+            inorderInsertRecursive(node->m_left, elem);
+            inorderInsertRecursive(node->m_middle, elem);
+            inorderInsertRecursive(node->m_right, elem);
+        }
+        else
+        {
+            size_t concatenatedNumber = concatenate(node->m_data, elem);
+
+            node->m_left = new Node(node->m_data + elem);
+            node->m_middle = new Node(concatenatedNumber);
+            node->m_right = new Node(node->m_data * elem);
+        }
+    }
+
+    void printLeaveNodes()
+    {
+        printLeaveNodesInternal(m_root);
+    }
+
+    void printLeaveNodesInternal(Node* node)
+    {
+        if (node == nullptr) {
+            return;
+        }
+
+        std::stack<Node*> stack;
+        stack.push(node);
+
+        while (!stack.empty()) {
+
+            node = stack.top();
+            stack.pop();
+
+            //if (node->m_left == nullptr && node->m_middle == nullptr && node->m_right == nullptr) {
+            //    // std::println("Data: {}", node->m_data);
+            //}
+
+            if (node->m_right != nullptr) {
+                stack.push(node->m_right);
+            }
+
+            if (node->m_middle != nullptr) {
+                stack.push(node->m_middle);
+            }
+
+            if (node->m_left != nullptr) {
+                stack.push(node->m_left);
+            }
+        }
+    }
+
+    std::vector<size_t> getLeaveNodes()
+    {
+        std::vector<size_t> leaveNodes{};
+
+        getLeaveNodesInternal(m_root, leaveNodes);
+
+        return leaveNodes;
+    }
+
+    void getLeaveNodesInternal(Node* node, std::vector<size_t>& values)
+    {
+        if (node == nullptr) {
+            return;
+        }
+
+        std::stack<Node*> stack;
+        stack.push(node);
+
+        while (!stack.empty()) {
+
+            node = stack.top();
+            stack.pop();
+
+            if (node->m_left == nullptr && node->m_middle == nullptr && node->m_right == nullptr) {
+
+                values.push_back(node->m_data);
+            }
+
+            if (node->m_right != nullptr) {
+                stack.push(node->m_right);
+            }
+
+            if (node->m_middle != nullptr) {
+                stack.push(node->m_middle);
             }
 
             if (node->m_left != nullptr) {
@@ -265,9 +366,9 @@ public:
 
 static void test_01()
 {
-  //  readPuzzleFromFile(g_filenameTestData);
+    Equation equation;
 
-    puzzle_07_parseLine("28883667: 640 6 1 9 5 2 7 59 1 6 93");
+    puzzle_07_parseLine("6780304916: 251 7 5 8 657 64 8 3 8 5", equation);
 }
 
 static void test_02()
@@ -282,13 +383,153 @@ static void test_02()
     tree.printLeaveNodes();
 }
 
+static bool validateEquation(const Equation& equation)
+{
+    SimpleBinaryTree tree{};
+
+    for (int op : equation.m_operands) {
+        tree.inorderInsert(op);
+    }
+
+    std::vector<size_t> results{ tree.getLeaveNodes() };
+
+    auto pos{ std::find(
+        std::begin(results),
+        std::end(results),
+        equation.m_value
+    ) };
+
+    return ! (pos == results.end());
+}
+
+static bool validateEquationEx(const Equation& equation)
+{
+    SimpleTernaryTree tree{};
+
+    for (int op : equation.m_operands) {
+        tree.inorderInsert(op);
+    }
+
+    tree.printLeaveNodes();
+
+    std::vector<size_t> results{ tree.getLeaveNodes() };
+
+    auto pos{ std::find(
+        std::begin(results),
+        std::end(results),
+        equation.m_value
+    ) };
+
+    return !(pos == results.end());
+}
+
+static void validateAllEquations(size_t& result)
+{
+    result = 0;
+
+    for (const auto& equation : g_equations) {
+
+        bool isValid{ validateEquation(equation) };
+        if (isValid) {
+            result += equation.m_value;
+        }
+        else {
+        }
+    }
+}
+
+static void validateAllEquationsEx(size_t& result)
+{
+    result = 0;
+
+    for (int counter{};  const auto & equation : g_equations) {
+
+        bool isValid{ validateEquationEx(equation) };
+        if (isValid) {
+            result += equation.m_value;
+        }
+
+        ++counter;
+
+        if (counter % 50 == 0) {
+            std::println("Done: {}", counter);
+        }
+    }
+ }
+
+static void test_03()
+{
+    readPuzzleFromFile(g_filenameTestData);
+}
+
+// works for read data and for test data
+static void puzzle_07_part_one()
+{
+    readPuzzleFromFile(g_filenameTestData);
+    //readPuzzleFromFile(g_filenameRealData);
+
+    size_t totalCalibrationResult{};
+    validateAllEquations(totalCalibrationResult);
+    std::println("Result: {}", totalCalibrationResult);
+}
+
+static void test_04()
+{
+    Equation equation;
+
+    // 7290: 6 8 6 15
+
+    equation.m_value = 7290;
+    equation.m_operands.push_back(6);
+    equation.m_operands.push_back(8);
+    equation.m_operands.push_back(6);
+    equation.m_operands.push_back(15);
+
+    bool isValid{ validateEquationEx(equation) };
+
+    std::println("isValid: {}", isValid);
+}
+
+static void test_04_01()
+{
+    Equation equation;
+
+    // 156: 15 6 3
+
+    equation.m_value = 156;
+    equation.m_operands.push_back(15);
+    equation.m_operands.push_back(6);
+    equation.m_operands.push_back(3);
+
+    bool isValid{ validateEquationEx(equation) };
+
+    std::println("isValid: {}", isValid);
+}
+
+static void puzzle_07_part_two()
+{
+    //readPuzzleFromFile(g_filenameTestData);
+    readPuzzleFromFile(g_filenameRealData);
+
+    size_t totalCalibrationResult{};
+    validateAllEquationsEx(totalCalibrationResult);
+    std::println("Result: {}", totalCalibrationResult);
+}
+
 // ===========================================================================
 // main
 
 void puzzle_07()
 {
-    test_01();
-  //  test_02();
+    //test_01();
+    //test_02();
+    //test_03();
+
+    // puzzle_07_part_one();      // expected 267566105056
+
+    //test_04();
+
+    puzzle_07_part_two();   // expected       116094961956019
 }
 
 // ===========================================================================
