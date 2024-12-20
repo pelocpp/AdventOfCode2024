@@ -9,6 +9,8 @@ void puzzle_04();
 void puzzle_05();
 void puzzle_06();
 void puzzle_07();
+void puzzle_08();
+void puzzle_09();
 
 int main()
 {
@@ -18,7 +20,9 @@ int main()
     //puzzle_04();
     //puzzle_05();
     //puzzle_06();
-    puzzle_07();
+    //puzzle_07();
+    //puzzle_08();
+    puzzle_09();
 
     return 0;
 }

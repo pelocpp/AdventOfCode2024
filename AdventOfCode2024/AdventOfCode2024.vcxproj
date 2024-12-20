@@ -137,6 +137,8 @@
     <ClCompile Include="Puzzle05.cpp" />
     <ClCompile Include="Puzzle06.cpp" />
     <ClCompile Include="Puzzle07.cpp" />
+    <ClCompile Include="Puzzle08.cpp" />
+    <ClCompile Include="Puzzle09.cpp" />
     <None Include="Puzzle02_Data.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -152,6 +154,10 @@
     <Text Include="Puzzle06_TestData.txt" />
     <Text Include="Puzzle07_RealData.txt" />
     <Text Include="Puzzle07_TestData.txt" />
+    <Text Include="Puzzle08_RealData.txt" />
+    <Text Include="Puzzle08_TestData.txt" />
+    <Text Include="Puzzle09_RealData.txt" />
+    <Text Include="Puzzle09_TestData.txt" />
     <Text Include="Scratch.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
