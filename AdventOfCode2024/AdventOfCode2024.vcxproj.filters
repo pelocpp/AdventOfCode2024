@@ -48,6 +48,9 @@
     <ClCompile Include="Puzzle09.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Puzzle10.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Puzzle02_Data.txt">
@@ -92,6 +95,12 @@
       <Filter>Source Files</Filter>
     </Text>
     <Text Include="Puzzle09_TestData.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="Puzzle10_RealData.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="Puzzle10_TestData.txt">
       <Filter>Source Files</Filter>
     </Text>
   </ItemGroup>
