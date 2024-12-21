@@ -7,15 +7,8 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
-#include <list>
 #include <print>
-#include <queue>
-#include <set>
-#include <sstream>
-#include <stack>
 #include <string>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 #include <string_view>
 
@@ -28,9 +21,10 @@ static std::string_view g_filenameRealData{ "Puzzle09_RealData.txt" };
 // ===========================================================================
 // types
 
-using FileIDRepresentation = std::vector<short>;
-using ForwardIterator = std::vector<short>::iterator;
-using BackwardIterator = std::vector<short>::reverse_iterator;
+using FileID = short;
+using FileIDRepresentation = std::vector<FileID>;
+using ForwardIterator = std::vector<FileID>::iterator;
+using BackwardIterator = std::vector<FileID>::reverse_iterator;
 
 // ===========================================================================
 // forward declarations
@@ -40,6 +34,8 @@ static FileIDRepresentation convertDiskMapToFileIDRepresentation(const std::stri
 static void moveFileBlocks(FileIDRepresentation& representation);
 static void printFileIDRepresentation(const FileIDRepresentation& representation);
 static size_t calcChecksum(const FileIDRepresentation& representation);
+static ForwardIterator searchFreeSpan(FileIDRepresentation& representation, size_t lengtH, ForwardIterator maxPosition);
+static void copyFile(FileIDRepresentation& representation, BackwardIterator sourcePos, ForwardIterator targetPos, size_t length);
 
 // ===========================================================================
 // input & output
@@ -72,9 +68,9 @@ static std::string readPuzzleFromFile(const std::string_view filename) {
 static FileIDRepresentation convertDiskMapToFileIDRepresentation(const std::string map) {
 
     FileIDRepresentation representation{};
-    representation.reserve(1000);
+    representation.reserve(100'000);
 
-    short currentID{};
+    FileID currentID{};
     size_t size{ map.size() };
     size_t pos{};
 
@@ -105,12 +101,14 @@ static FileIDRepresentation convertDiskMapToFileIDRepresentation(const std::stri
         ++pos;
     }
 
+    std::println("Last file ID: {}", currentID-1);
+    std::println("Length of File Representation: : {}", representation.size());
+
     return representation;
 }
 
-static void moveFileBlocks (FileIDRepresentation& representation) {
-
-    // search next free space position
+static void moveFileBlocks (FileIDRepresentation& representation)
+{
     ForwardIterator pos{ representation.begin() };
     BackwardIterator reversePos{ representation.rbegin() };
 
@@ -140,9 +138,9 @@ static void moveFileBlocks (FileIDRepresentation& representation) {
             break;
 
         // move file block from end to begin
-        short block = *reversePos;
+        FileID id = *reversePos;
         *reversePos = -1;
-        *pos = block;
+        *pos = id;
 
         // advance both iterators
         ++pos;
@@ -150,6 +148,120 @@ static void moveFileBlocks (FileIDRepresentation& representation) {
 
         // just for testing
         // printFileIDRepresentation(representation);
+    }
+}
+
+static void moveFileBlocksEx(FileIDRepresentation& representation) {
+
+    ForwardIterator pos{ representation.begin() };
+    BackwardIterator reversePosBegin{ representation.rbegin() };
+    BackwardIterator reversePosEnd{ };
+
+    while (true) {
+
+        // search begin and end of last file
+        reversePosBegin = std::find_if(
+            reversePosBegin,
+            representation.rend(),
+            [](auto elem) {
+                return (elem == -1) ? false : true;
+            }
+        );
+
+        // retrieve ID of this file
+        FileID id{ *reversePosBegin };
+        reversePosEnd = reversePosBegin;
+        while (*reversePosEnd == id) {
+            ++reversePosEnd;
+        }
+
+        // calculate size of this file
+        std::ptrdiff_t length{ reversePosEnd - reversePosBegin };
+
+        // search a span of free blocks of this length (to the left)
+        ForwardIterator maxPosition{ reversePosBegin.base() };
+        ForwardIterator freeSpan = searchFreeSpan(representation, length, maxPosition);
+
+        if (freeSpan != maxPosition) {
+            // move file completely to the left side 
+            copyFile(representation, reversePosBegin, freeSpan, length);
+        }
+        else {
+            // no space available, move to next file 
+        }
+
+        // advance to next file
+        reversePosBegin += length;
+
+        // end of move detection ?????????????????
+        // print current file ID
+
+      //  printFileIDRepresentation(representation);
+
+        //std::println("Current File ID: {}", id);
+
+        // File with ID 0 needn't to be moved
+        if (id == 1) {
+            break;
+        }
+    }
+
+
+
+}
+
+static ForwardIterator searchFreeSpan(FileIDRepresentation& representation, size_t length, ForwardIterator maxPosition)
+{
+    ForwardIterator it{ representation.begin() };
+
+    while (true)
+    {
+        // search next free block
+        while (*it != -1) {
+            ++it;
+            if (it == maxPosition) {
+                return maxPosition;
+            }
+        }
+
+        // check, if free space is huge enough
+        ForwardIterator tmp{ it };
+        size_t count{};
+
+        while (count != length) {
+
+            if (*tmp == -1) {
+                ++tmp;
+                if (tmp == maxPosition) {
+                    return maxPosition;
+                }
+
+                ++count;
+            }
+            else {
+                break;
+            }
+        }
+
+        if (count == length) {
+            return it;
+        }
+        else {
+            // advance position
+            it += count;
+            continue;
+        }
+    }
+}
+
+static void copyFile(FileIDRepresentation& representation, BackwardIterator sourcePos, ForwardIterator targetPos, size_t length) {
+
+    for (size_t i{}; i != length; ++i) {
+
+        *targetPos = *sourcePos;
+        *sourcePos = -1;
+        ++targetPos;
+        ++sourcePos;
     }
 }
 
@@ -161,6 +273,22 @@ static size_t calcChecksum(const FileIDRepresentation& representation) {
     while (representation[n] != -1) {
 
         checksum += (n * representation[n]);
+        ++n;
+    }
+
+    return checksum;
+}
+
+static size_t calcChecksumEx(const FileIDRepresentation& representation) {
+
+    size_t checksum{};
+
+    for (size_t n{}; auto id : representation) {
+
+        if (id != -1) {
+            checksum += (n * representation[n]);
+        }
+    
         ++n;
     }
 
@@ -187,15 +315,7 @@ static void printFileIDRepresentation(const FileIDRepresentation& representation
 
 static void test_01() {
 
-    std::string map = readPuzzleFromFile(g_filenameRealData);
-    FileIDRepresentation representation{ convertDiskMapToFileIDRepresentation(map) };
-    //printFileIDRepresentation(representation);
 
-    moveFileBlocks(representation);
-
-    // printFileIDRepresentation(representation);
-
-    std::println("Checksum: {}", calcChecksum(representation));  // expected 6259790630969
 }
 
 // ===========================================================================
@@ -203,17 +323,39 @@ static void test_01() {
 
 static void puzzle_09_part_one()
 {
-    std::string map{ readPuzzleFromFile(g_filenameRealData) };
+    std::string map = readPuzzleFromFile(g_filenameRealData);
     FileIDRepresentation representation{ convertDiskMapToFileIDRepresentation(map) };
-    printFileIDRepresentation(representation);
+    //printFileIDRepresentation(representation);
+
+    moveFileBlocks(representation);
+
+    // printFileIDRepresentation(representation);
+    std::println("Checksum: {}", calcChecksum(representation));  // expected 6259790630969
 }
 
 // ===========================================================================
 // part two
 
+static void puzzle_09_part_two_test()
+{
+    std::string map = readPuzzleFromFile(g_filenameTestData);
+    FileIDRepresentation representation{ convertDiskMapToFileIDRepresentation(map) };
+    printFileIDRepresentation(representation);
+
+    moveFileBlocksEx(representation);
+
+    printFileIDRepresentation(representation);
+    std::println("Checksum: {}", calcChecksumEx(representation));  // expected 2858
+}
+
 static void puzzle_09_part_two()
 {
-    readPuzzleFromFile(g_filenameRealData);
+    std::string map{ readPuzzleFromFile(g_filenameRealData) };
+    FileIDRepresentation representation{ convertDiskMapToFileIDRepresentation(map) };
+
+    moveFileBlocksEx(representation);
+
+    std::println("Checksum: {}", calcChecksumEx(representation));  // expected 2858
 }
 
 // ===========================================================================
@@ -221,9 +363,14 @@ static void puzzle_09_part_two()
 
 void puzzle_09()
 {
-    test_01();
-    // puzzle_09_part_one();
-    //puzzle_09_part_two(); 
+    //puzzle_09_part_one();
+    
+    //puzzle_09_part_two_test();
+
+    // a) 6259790630969
+    // b) 6289564433984
+
+    puzzle_09_part_two(); // 6289564433984
 }
 
 // ===========================================================================
