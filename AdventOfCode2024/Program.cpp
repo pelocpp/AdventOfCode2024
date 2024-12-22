@@ -2,6 +2,10 @@
 // Program.cpp
 // ===========================================================================
 
+// https://www.youtube.com/watch?v=BJhpteqlVPM
+
+// https://youtu.be/bS9882S0ZHs
+
 void puzzle_01();
 void puzzle_02();
 void puzzle_03();
