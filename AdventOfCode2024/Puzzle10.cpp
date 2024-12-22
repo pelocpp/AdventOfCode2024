@@ -3,15 +3,19 @@
 // Puzzle10.cpp
 // ===========================================================================
 
+#include "../Logger/ScopedTimer.h"
+
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <fstream>
 #include <iostream>
 #include <list>
+#include <map>
 #include <print>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -24,17 +28,51 @@ static std::string_view g_filenameRealData{ "Puzzle10_RealData.txt" };
 // ===========================================================================
 // types
 
+// Why can’t I compile an unordered_map with a pair as key?
+// https://medium.com/@amansingh_2001/why-cant-i-compile-an-unordered-map-with-a-pair-as-key-6eb1ad66cbd8
+
 template <size_t Size> 
 class TopographicMap
 {
 private:
 
-    using Solution = std::list<std::pair<int,int>>;
-    using ListSolutions = std::list<Solution>;
+    using Coord = std::pair<int, int>;
 
-    std::array<std::array<int, Size>, Size> m_map;            // topographic map
-    Solution                                m_currentTrail;   // trail being in construction
-    ListSolutions                           m_trails;         // list of found trail
+    struct CoordsHash
+    {
+        std::size_t operator () (const Coord& coord) const {
+            return std::hash<int>{}(coord.first) ^ std::hash<int>{}(coord.second);
+        }
+    };
+
+    struct CoordsCompare
+    {
+        bool operator () (const Coord& coord1, const Coord& coord2) const {
+
+            const auto& [row1, col1] = coord1;
+            const auto& [row2, col2] = coord2;
+
+            if (row1 < row2) {
+                return true;
+            }
+            else if (row1 > row2) {
+                return false;
+            }
+            else {
+                return col1 < col2;
+            }
+        }
+    };
+
+    using Map            = std::array<std::array<int, Size>, Size>;
+    using Trail          = std::list<Coord>;
+    using ListOfTrails   = std::list<Trail>;
+    //using MapOfTrails    = std::unordered_map<Coord, ListOfTrails, CoordsHash>;
+    using MapOfTrails = std::map<Coord, ListOfTrails, CoordsCompare>;
+
+    Map                  m_map;            // topographic map indicating the height at each position
+    Trail                m_currentTrail;   // trail being in construction
+    MapOfTrails          m_trails;         // map of found trails, unique for all trail heads
 
 public:
     TopographicMap() : m_map{} {}
@@ -55,9 +93,6 @@ public:
                 if (line.empty()) {
                     break;
                 }
-
-                assert(line.size() == Size);
-                // std::println("Line: {}", line);
 
                 ++row;
 
@@ -87,105 +122,188 @@ public:
         }
     }
 
-    void searchTrail(std::pair<int, int> coord) {
+    void searchAllTrails() {
 
-        searchTrailHelper(coord, 0, 1);
+        for (int row{}; const auto & mapRow : m_map) {
 
+            for (int col{}; const auto height : mapRow) {
+                
+                if (height == 0) {
+
+                    // add key and emtpy list into trails map
+                    m_trails[{ row, col }] = ListOfTrails{};
+
+                    // found a trail head, search trails
+                    searchTrail({ row , col });
+                }
+
+                ++col;
+            }
+
+            ++row;
+        }
+    }
+
+    void searchTrail(const Coord& head) {
+
+        auto [row, col] = head;
+
+        // add key and emtpy list into trails map
+        m_trails[{ row, col }] = ListOfTrails{};
+
+        // found a trail head, search trails
+        searchTrailHelper(head, head, 0, 1);
+    }
+
+    void printTrails() {
+
+        for (const auto& entry : m_trails) {
+
+            auto [row, col] = entry.first;
+            std::println("Trail Head: {},{}", row, col);
+
+            for (const auto& listOfTrails : entry.second) {
+                printTrail(listOfTrails);
+            }
+            std::println();
+        }
+    }
+
+    void printScores() {
+
+        for (const auto& entry : m_trails) {
+
+            const auto& coord = entry.first;
+            const std::list<Trail>& trails = entry.second;
+
+            std::println("Trail Head: [{},{}] - Score: {}", coord.first, coord.second, trails.size());
+        }
+    }
+
+    size_t totalScore() {
+
+        size_t score{};
+
+        for (const auto& entry : m_trails) {
+
+            const std::list<Trail>& trails = entry.second;
+            score += trails.size();
+        }
+
+        return score;
     }
 
 private:
-    void searchTrailHelper(std::pair<int, int> coord, size_t height, size_t length) {
+    void searchTrailHelper(const Coord& head, const Coord& next, size_t height, size_t length) {
 
-        m_currentTrail.push_back(coord);
+        m_currentTrail.push_back(next);
 
         if (length == 10) {
 
-            // add found solution to the list of all solutions
-            m_trails.push_back(m_currentTrail);
+            // add found solution to the list of all solutions,
+            // if the found trail has reached a new 9-height position?
+
+            const auto& entry = m_trails.find(head);
+
+            auto& listOfTrails = entry->second;
+
+            if (listOfTrails.size() == 0) {
+
+                // found first solution for this trail head, add this trail
+                listOfTrails.push_back(m_currentTrail);
+            }
+            else {
+
+                // does the found trail reach a new 9-height position?
+                bool newNineHeightPosition{ true };
+
+                for (const auto& trail : listOfTrails) {
+
+                    const auto& nineHeightPosition{ trail.back() };
+
+                    if (nineHeightPosition == next) {
+
+                        newNineHeightPosition = false;
+                        break;
+                    }
+                }
+
+                if (newNineHeightPosition) {
+                    listOfTrails.push_back(m_currentTrail);
+                }
+            }
         }
         else {
 
-            // determine list of possible next moves
-            std::vector<std::pair<int, int>> steps{ nextSteps(coord, height+1) };
+            // determine list of possible next steps
+            std::vector<Coord> steps{ nextSteps(next, height + 1) };
 
-            // do next moves sequential
-            for (const std::pair<int, int>& step : steps) {
-                searchTrailHelper(step, height + 1, length + 1);
+            // do next step
+            for (const Coord& step : steps) {
+                searchTrailHelper(head, step, height + 1, length + 1);
             }
-
         }
 
         m_currentTrail.pop_back();
     }
 
-    std::vector<std::pair<int, int>> nextSteps(std::pair<int, int> coord, size_t height) {
+    std::vector<Coord> nextSteps(Coord coord, size_t height) {
 
-        std::vector<std::pair<int, int>> steps{};
+        std::vector<Coord> steps{};
 
         auto [row, col] = coord;
 
         // check upper step
         if (row != 0) {
-            if (m_map[row - 1][col] == height + 1) {
+            if (m_map[row - 1][col] == height) {
                 steps.push_back({ row - 1 , col});
             }
         }
 
         // check step to the right
         if (col != Size-1) {
-            if (m_map[row][col+1] == height + 1) {
+            if (m_map[row][col+1] == height) {
                 steps.push_back({ row , col + 1 });
             }
         }
 
         // check step to the left
         if (col != 0) {
-            if (m_map[row][col-1] == height + 1) {
+            if (m_map[row][col-1] == height) {
                 steps.push_back({ row , col - 1 });
             }
         }
 
         // check lower step
         if (row != Size-1) {
-            if (m_map[row + 1][col] == height + 1) {
+            if (m_map[row + 1][col] == height) {
                 steps.push_back({ row + 1 , col });
             }
         }
 
         return steps;
     }
-};
 
+    void printTrail(const std::list<Coord>& trail) {
+
+        for (int count{}; const auto & coord : trail) {
+
+            ++count;
+            std::print("[{},{}]", coord.first, coord.second);
+            if (count < 10) {
+                std::print(" => ");
+            }
+        }
+    }
+};
 
 // ===========================================================================
 // forward declarations
 
-
 // ===========================================================================
 // input & output
 
-//static std::string readPuzzleFromFile(const std::string_view filename) {
-//
-//    std::ifstream file{ filename.data() };
-//    std::string line{};
-//
-//    if (file.is_open()) {
-//
-//        // read a single line
-//        std::getline(file, line);
-//
-//        file.close();
-//    }
-//    else {
-//
-//        std::println("Unable to open file {} !", filename);
-//    }
-//
-//    return line;
-//}
-
 // ===========================================================================
-// 
 // types / logic
 
 // ===========================================================================
@@ -197,6 +315,17 @@ static void puzzle_10_test()
     map.readPuzzleFromFile(g_filenameTestData);
     map.printMap();
     map.searchTrail({0, 0});
+    map.printTrails();
+}
+
+static void puzzle_11_test()
+{
+    TopographicMap<8> map;
+    map.readPuzzleFromFile(g_filenameTestData);
+    map.printMap();
+    map.searchAllTrails();
+    map.printScores();
+    std::println("Total score: {}", map.totalScore());
 }
 
 // ===========================================================================
@@ -204,6 +333,12 @@ static void puzzle_10_test()
 
 static void puzzle_10_part_one()
 {
+    ScopedTimer watch{};
+
+    TopographicMap<57> map;
+    map.readPuzzleFromFile(g_filenameRealData);
+    map.searchAllTrails();
+    std::println("Total score: {}", map.totalScore());
 }
 
 // ===========================================================================
@@ -218,10 +353,9 @@ static void puzzle_10_part_two()
 
 void puzzle_10()
 {
-    puzzle_10_test();
-
-    //puzzle_10_part_one();
-    //puzzle_10_part_two();
+    //puzzle_10_test();
+    //puzzle_11_test();
+    puzzle_10_part_one();   // 754
 }
 
 // ===========================================================================
