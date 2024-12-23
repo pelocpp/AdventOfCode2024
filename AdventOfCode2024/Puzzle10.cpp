@@ -67,8 +67,8 @@ private:
     using Map            = std::array<std::array<int, Size>, Size>;
     using Trail          = std::list<Coord>;
     using ListOfTrails   = std::list<Trail>;
-    //using MapOfTrails    = std::unordered_map<Coord, ListOfTrails, CoordsHash>;
-    using MapOfTrails = std::map<Coord, ListOfTrails, CoordsCompare>;
+    using MapOfTrails    = std::unordered_map<Coord, ListOfTrails, CoordsHash>;
+    //using MapOfTrails = std::map<Coord, ListOfTrails, CoordsCompare>;
 
     Map                  m_map;            // topographic map indicating the height at each position
     Trail                m_currentTrail;   // trail being in construction
@@ -99,7 +99,7 @@ public:
                 // copy line into map
                 for (int col{}; char ch : line) {
 
-                    m_map[row][col] = ch - '0';
+                    m_map[row][col] = (ch == '.') ? -1 : ch - '0';
                     ++col;
                 }
             }
@@ -116,7 +116,7 @@ public:
     {
         for (const auto& row : m_map) {
             for (const auto height : row) {
-                std::print("{}", height);
+                std::print("{}", (height >= 0) ? (char) (height + '0') : '.');
             }
             std::println();
         }
@@ -200,38 +200,11 @@ private:
 
         if (length == 10) {
 
-            // add found solution to the list of all solutions,
+            // add found trail to the list of all trails,
             // if the found trail has reached a new 9-height position?
-
-            const auto& entry = m_trails.find(head);
-
-            auto& listOfTrails = entry->second;
-
-            if (listOfTrails.size() == 0) {
-
-                // found first solution for this trail head, add this trail
-                listOfTrails.push_back(m_currentTrail);
-            }
-            else {
-
-                // does the found trail reach a new 9-height position?
-                bool newNineHeightPosition{ true };
-
-                for (const auto& trail : listOfTrails) {
-
-                    const auto& nineHeightPosition{ trail.back() };
-
-                    if (nineHeightPosition == next) {
-
-                        newNineHeightPosition = false;
-                        break;
-                    }
-                }
-
-                if (newNineHeightPosition) {
-                    listOfTrails.push_back(m_currentTrail);
-                }
-            }
+            
+            // addTrailIf(head, next, m_currentTrail);
+            addTrailIfTwo(head, next, m_currentTrail);
         }
         else {
 
@@ -245,6 +218,46 @@ private:
         }
 
         m_currentTrail.pop_back();
+    }
+
+    void addTrailIf(const Coord& head, const Coord& next, const Trail& trail) {
+
+        // add found trail to the list of all trails,
+        // if the found trail has reached a new 9-height position?
+        auto& [coord, listOfTrails] = *m_trails.find(head);
+
+        if (listOfTrails.size() == 0) {
+
+            // found first trail according to this trail head, just add this trail
+            listOfTrails.push_back(m_currentTrail);
+        }
+        else {
+
+            // does the found trail reach a new 9-height position?
+            bool newNineHeightPosition{ true };
+
+            for (const auto& trail : listOfTrails) {
+
+                const auto& nineHeightPosition{ trail.back() };
+
+                if (nineHeightPosition == next) {
+
+                    newNineHeightPosition = false;
+                    break;
+                }
+            }
+
+            if (newNineHeightPosition) {
+                listOfTrails.push_back(m_currentTrail);
+            }
+        }
+    }
+
+    void addTrailIfTwo(const Coord& head, const Coord& next, const Trail& trail) {
+
+        // add found trail to the list of all trails
+        auto& [coord, listOfTrails] = *m_trails.find(head);
+        listOfTrails.push_back(m_currentTrail);
     }
 
     std::vector<Coord> nextSteps(Coord coord, size_t height) {
@@ -328,6 +341,16 @@ static void puzzle_11_test()
     std::println("Total score: {}", map.totalScore());
 }
 
+static void puzzle_12_test()
+{
+    TopographicMap<8> map;
+    map.readPuzzleFromFile(g_filenameTestData);
+    map.printMap();
+    map.searchAllTrails();
+    map.printScores();
+    std::println("Total score: {}", map.totalScore());
+}
+
 // ===========================================================================
 // part one
 
@@ -338,7 +361,7 @@ static void puzzle_10_part_one()
     TopographicMap<57> map;
     map.readPuzzleFromFile(g_filenameRealData);
     map.searchAllTrails();
-    std::println("Total score: {}", map.totalScore());
+    std::println("Total Rating: {}", map.totalScore());
 }
 
 // ===========================================================================
@@ -346,6 +369,12 @@ static void puzzle_10_part_one()
 
 static void puzzle_10_part_two()
 {
+    ScopedTimer watch{};
+
+    TopographicMap<57> map;
+    map.readPuzzleFromFile(g_filenameRealData);
+    map.searchAllTrails();
+    std::println("Total Rating: {}", map.totalScore());
 }
 
 // ===========================================================================
@@ -355,7 +384,10 @@ void puzzle_10()
 {
     //puzzle_10_test();
     //puzzle_11_test();
-    puzzle_10_part_one();   // 754
+    //puzzle_10_part_one();   // 754
+
+    //puzzle_12_test();
+    puzzle_10_part_two();     // 1609
 }
 
 // ===========================================================================
