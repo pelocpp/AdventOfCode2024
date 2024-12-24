@@ -67,13 +67,15 @@ public:
     static void stopWatchMilli(std::ostream& os) {
         std::chrono::steady_clock::time_point end{ std::chrono::steady_clock::now() };
         auto duration{ std::chrono::duration_cast<std::chrono::milliseconds>(end - s_begin).count() };
-        os << getPrefix() << '\t' << "Elapsed time: " << duration << " [milliseconds]" << std::endl;
+        // os << getPrefix() << '\t' << "Elapsed time: " << duration << " [milliseconds]" << std::endl;
+        os << "Elapsed time: " << duration << " [milliseconds]" << std::endl;
     }
 
     static void stopWatchMicro(std::ostream& os) {
         std::chrono::steady_clock::time_point end{ std::chrono::steady_clock::now() };
         auto duration{ std::chrono::duration_cast<std::chrono::microseconds>(end - s_begin).count() };
-        os << getPrefix() << '\t' << "Elapsed time: " << duration << " [microseconds]" << std::endl;
+        // os << getPrefix() << '\t' << "Elapsed time: " << duration << " [microseconds]" << std::endl;
+        os << "Elapsed time: " << duration << " [microseconds]" << std::endl;
     }
 
 private:

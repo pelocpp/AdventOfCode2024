@@ -57,6 +57,9 @@
     <ClCompile Include="..\Logger\Logger.cpp">
       <Filter>Logger</Filter>
     </ClCompile>
+    <ClCompile Include="Puzzle11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Puzzle02_Data.txt">
@@ -107,6 +110,12 @@
       <Filter>Source Files</Filter>
     </Text>
     <Text Include="Puzzle10_TestData.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="Puzzle11_RealData.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="Puzzle11_TestData.txt">
       <Filter>Source Files</Filter>
     </Text>
   </ItemGroup>

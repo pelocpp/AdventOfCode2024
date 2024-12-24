@@ -380,7 +380,7 @@ static void puzzle_10_part_two()
 // ===========================================================================
 // main
 
-void puzzle_10()
+static void puzzle_10()
 {
     //puzzle_10_test();
     //puzzle_11_test();

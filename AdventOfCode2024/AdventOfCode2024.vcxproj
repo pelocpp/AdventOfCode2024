@@ -119,6 +119,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,6 +142,7 @@
     <ClCompile Include="Puzzle08.cpp" />
     <ClCompile Include="Puzzle09.cpp" />
     <ClCompile Include="Puzzle10.cpp" />
+    <ClCompile Include="Puzzle11.cpp" />
     <None Include="Puzzle02_Data.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -162,6 +164,8 @@
     <Text Include="Puzzle09_TestData.txt" />
     <Text Include="Puzzle10_RealData.txt" />
     <Text Include="Puzzle10_TestData.txt" />
+    <Text Include="Puzzle11_RealData.txt" />
+    <Text Include="Puzzle11_TestData.txt" />
     <Text Include="Scratch.txt" />
   </ItemGroup>
   <ItemGroup>

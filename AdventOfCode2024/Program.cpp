@@ -16,6 +16,7 @@ void puzzle_07();
 void puzzle_08();
 void puzzle_09();
 void puzzle_10();
+void puzzle_11();
 
 int main()
 {
