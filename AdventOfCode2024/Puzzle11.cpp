@@ -3,6 +3,8 @@
 // Puzzle11.cpp
 // ===========================================================================
 
+// TBD: Die zerlegten Zahlen ebenfalls in eine Map aufnehmen ... dann muss nicht so oft zerlegt werden
+
 #include "../Logger/ScopedTimer.h"
 
 #include <algorithm>
@@ -26,16 +28,67 @@ static std::string_view g_filenameRealData{ "Puzzle11_RealData.txt" };
 // ===========================================================================
 // types
 
-class PlutonianPebbles
+struct IPlutonianPebbles
+{
+    virtual void readPuzzleFromFile(const std::string_view filename) = 0;
+    virtual void printPebbles() = 0;
+    virtual void blink() = 0;
+    virtual void blinking(size_t count) = 0;
+    virtual size_t size() = 0;
+};
+
+class PlutonianPebbles : public IPlutonianPebbles
+{
+public:
+    void blinking(size_t count) override
+    {
+        for (size_t i{}; i != count; ++i) {
+            std::println("{} blinking ...", (i + 1));
+            blink();
+        }
+    }
+
+    static std::pair<size_t, size_t> splitPebble(size_t pebble)
+    {
+        std::string s{ std::to_string(pebble) };
+
+        size_t length{ s.size() };
+
+        length /= 2;
+        std::string leftPart{ s.substr(0,length) };
+        std::string rightPart{ s.substr(length) };
+
+        // convert two halfs to size_t
+        size_t left{}, right{};
+        std::istringstream iss{ leftPart };
+        iss >> left;
+        iss = std::istringstream{ rightPart };
+        iss >> right;
+
+        return { left , right };
+    }
+
+    static bool hasEvenDigits(size_t pebble)
+    {
+        int numDigits{};
+        while (pebble != 0) {
+            pebble /= 10;
+            ++numDigits;
+        }
+        return (numDigits % 2) == 0;
+    }
+};
+
+class BruteForcePlutonianPebbles : public PlutonianPebbles
 {
 protected:
     std::forward_list<size_t> m_pebbles{};
     size_t                    m_size;
 
 public:
-    PlutonianPebbles() : m_pebbles{}, m_size{} {}
+    BruteForcePlutonianPebbles() : m_pebbles{}, m_size{} {}
 
-    virtual void readPuzzleFromFile(const std::string_view filename)
+    void readPuzzleFromFile(const std::string_view filename) override
     {
         std::ifstream file{ filename.data() };
         std::string line{};
@@ -73,7 +126,7 @@ public:
         }
     }
 
-    virtual void printPebbles()
+    void printPebbles() override
     {
         for (const auto pebble: m_pebbles) {
             std::print("{} ", pebble);
@@ -81,7 +134,7 @@ public:
         std::println();
     }
 
-    virtual void blink()
+    void blink() override
     {
         auto pos{ m_pebbles.begin() };
 
@@ -109,49 +162,9 @@ public:
         }
     }
 
-    void blinking(size_t count)
-    {
-        for (size_t i{}; i != count; ++i) {
-            std::println("{} blinking ...", (i+1));
-            blink();
-            printPebbles();
-        }
-    }
-
-    virtual size_t size()
+    size_t size() override
     {
         return m_size;
-    }
-
-protected:
-    static std::pair<size_t, size_t> splitPebble(size_t pebble)
-    {
-        std::string s{ std::to_string(pebble) };
-
-        size_t length{s.size()};
-
-        length /= 2;
-        std::string leftPart{ s.substr(0,length) };
-        std::string rightPart{ s.substr(length) };
-
-        // convert two halfs to size_t
-        size_t left{}, right{};
-        std::istringstream iss{ leftPart };
-        iss >> left;
-        iss = std::istringstream{ rightPart };
-        iss >> right;
-
-        return { left , right };
-    }
-
-    static bool hasEvenDigits(size_t pebble)
-    {
-        int numDigits{};
-        while (pebble != 0) {
-            pebble /= 10;
-            ++numDigits;
-        }
-        return (numDigits % 2) == 0;
     }
 };
 
@@ -159,47 +172,72 @@ class AdvancedPlutonianPebbles : public PlutonianPebbles
 {
 private:
     std::unordered_map<size_t, size_t> m_countedPebbles;
+    size_t                             m_size;
 
 public:
-    AdvancedPlutonianPebbles() : PlutonianPebbles {} {}
+    AdvancedPlutonianPebbles() : m_countedPebbles{}, m_size{} {}
 
-    virtual void readPuzzleFromFile(const std::string_view filename) override {
+    void readPuzzleFromFile(const std::string_view filename) override {
 
-        PlutonianPebbles::readPuzzleFromFile(filename);
+        std::ifstream file{ filename.data() };
+        std::string line{};
 
-        // initialize dictionary
-        for (auto pebble : m_pebbles) {
-            m_countedPebbles[pebble] = 1;
+        if (file.is_open()) {
+
+            // read a single line
+            std::getline(file, line);
+
+            std::stringstream ss{ line };
+            std::string token;
+
+            // extract all pebbles from this line
+            while (ss >> token) {
+
+                // convert std::string to size_t
+                size_t pebble{};
+                std::istringstream iss{ token };
+                iss >> pebble;
+
+                // insert pebble into dictionary
+                m_countedPebbles[pebble] += 1;
+                m_size++;
+            }
+
+            file.close();
+        }
+        else {
+
+            std::println("Unable to open file {} !", filename);
         }
     }
 
-    virtual void blink() override
+    void blink() override
     {
-        std::unordered_map copyMap{ m_countedPebbles };
+        std::unordered_map<size_t, size_t> pebbles{ };
 
-        for (auto [pebble, count] : copyMap) {
+        for (auto [pebble, count] : m_countedPebbles) {
 
             if (pebble == 0) {
-                m_countedPebbles[pebble] = count - 1;
-                m_countedPebbles[1] = count + 1;
+                pebbles[1] += count;
             }
             else if (hasEvenDigits(pebble)) {  // TODO : schneller berechnen
 
                 const auto [leftHalf, rightHalf] = splitPebble(pebble);
 
-                m_countedPebbles[pebble] = count - 1;  // remove current pebble
-
                 // add two new pebbles
-                m_countedPebbles[leftHalf] += 1;
-                m_countedPebbles[rightHalf] += 1;
+                pebbles[leftHalf] += count;
+                pebbles[rightHalf] += count;
             }
             else {
-                m_countedPebbles[pebble * 2024] += 1;
+                pebbles[pebble * 2024] += count;
             }
         }
+
+        // update dictionary
+        m_countedPebbles = pebbles;
     }
 
-    virtual size_t size()
+    size_t size() override
     {
         m_size = 0;
 
@@ -210,10 +248,15 @@ public:
         return m_size;
     }
 
-    virtual void printPebbles() override
+    void printPebbles() override
     {
         for (const auto [pebble, count] : m_countedPebbles) {
-            std::print("{} [{}] ", pebble, count);
+
+            if (count != 0) {
+                std::print("{} [{}] ", pebble, count);
+            }
+
+
         }
         std::println();
     }
@@ -234,7 +277,7 @@ public:
 static void puzzle_10_test()
 {
     ScopedTimer watch{};
-    PlutonianPebbles pebbles;
+    BruteForcePlutonianPebbles pebbles;
     pebbles.readPuzzleFromFile(g_filenameTestData);
     pebbles.printPebbles();
     //std::println("Size: {}", pebbles.size());
@@ -249,7 +292,7 @@ static void puzzle_11_test()
     pebbles.readPuzzleFromFile(g_filenameTestData);
     pebbles.printPebbles();
     //std::println("Size: {}", pebbles.size());
-    pebbles.blinking(3);
+    pebbles.blinking(6);
     //std::println("Size: {}", pebbles.size());   // expected 213625 (25 times blinking)
 }
 
@@ -263,12 +306,12 @@ static void puzzle_12_test()
 static void puzzle_11_part_one()
 {
     ScopedTimer watch{};
-    PlutonianPebbles pebbles;
-    pebbles.readPuzzleFromFile(g_filenameRealData);
+    BruteForcePlutonianPebbles pebbles;
     pebbles.printPebbles();
+    pebbles.readPuzzleFromFile(g_filenameRealData);
     std::println("Size: {}", pebbles.size());
     pebbles.blinking(25);
-    std::println("Size: {}", pebbles.size());   // expected 213625 (25 times blinking)
+    std::println("Size: {}", pebbles.size());   // expected 213625 (25 times blinking) // 2000 msecs
 }
 
 // ===========================================================================
@@ -282,20 +325,20 @@ static void puzzle_11_part_two()
     pebbles.printPebbles();
     std::println("Size: {}", pebbles.size());
     pebbles.blinking(75);
-    std::println("Size: {}", pebbles.size());   // expected 
+    std::println("Size: {}", pebbles.size());   // expected 252442982856820
 }
 
 // ===========================================================================
 // main
 
-void puzzle_10()
+void puzzle_11()
 {
     //puzzle_10_test();
-    puzzle_11_test();
+    //puzzle_11_test();
     //puzzle_12_test();
 
-    //puzzle_11_part_one();
-    //puzzle_11_part_two();
+    puzzle_11_part_one();
+    puzzle_11_part_two();
 }
 
 // ===========================================================================
