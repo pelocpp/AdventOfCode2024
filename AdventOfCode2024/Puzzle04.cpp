@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-
 // Find all occurences of a substring
 // https://stackoverflow.com/questions/4034750/find-all-substrings-occurrences-and-locations
 

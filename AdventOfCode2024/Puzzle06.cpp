@@ -25,8 +25,8 @@ static constexpr int MaxPathTestLength = 1000;
 static constexpr int MaxPathRealLength = 20000;
 
 // TO BE SET !!!!
-static constexpr int Size = RealSize;
-static constexpr int MaxPathLength = MaxPathRealLength;
+static int constexpr Size = RealSize;
+static int constexpr MaxPathLength = MaxPathRealLength;
 
 // ===========================================================================
 // types
