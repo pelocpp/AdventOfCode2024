@@ -5,19 +5,21 @@
 
 // https://forum.ada-lang.io/t/2024-day-12-garden-groups-spoiler/1587/2
 
+// https://advent-of-code.xavd.id/writeups/2024/day/12/
+
 #include "../Logger/ScopedTimer.h"
 
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <forward_list>
+#include <cctype>
 #include <fstream>
 #include <iostream>
+#include <list>
+#include <memory>
 #include <print>
-#include <sstream>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <utility>
 
 // ===========================================================================
@@ -33,19 +35,17 @@ template <size_t Dimension>
 class GardenGroups
 {
 private:
-    std::array<std::array<char, Dimension>, Dimension>   m_garden;
-    std::array<std::array<char, Dimension>, Dimension>   m_area;
-    char                                                  m_plant;
-
-    std::list<std::pair<size_t, size_t>>                  m_listArea;
+    std::unique_ptr<std::array<std::array<char, Dimension>, Dimension>>   m_garden;
+    std::list<std::pair<size_t, size_t>>                                  m_listArea;
+    char                                                                  m_plant;
+    size_t                                                                m_totalPrice;
 
 public:
     // c'tor
-    GardenGroups() : m_garden{}, m_area{}, m_plant{ '0' } {
-    
-        for (auto& row : m_area) {
-            std::fill(row.begin(), row.end(), '0');
-        }
+    GardenGroups() 
+        : m_garden{}, m_listArea{}, m_plant{ '0' }, m_totalPrice{}
+    {
+        m_garden = std::make_unique <std::array<std::array<char, Dimension>, Dimension>> ();
     }
 
     // public interface
@@ -73,7 +73,7 @@ public:
                 // copy line into board
                 for (int col{}; char ch : line) {
 
-                    m_garden[row][col] = ch;
+                    (*m_garden)[row][col] = ch;
                     ++col;
                 }
             }
@@ -88,98 +88,81 @@ public:
 
     size_t getSizeOfCurrentArea() {
 
-        size_t count{};
+        return m_listArea.size();
+    }
 
-        for (auto& row : m_area) {
-            size_t result{ static_cast<size_t> (std::count(row.begin(), row.end(), m_plant)) };
-            count += result;
-        }
+    size_t getTotalPrice() {
 
-        return count;
+        return m_totalPrice;
     }
 
     size_t getPerimeterOfCurrentArea() {
 
-        size_t perimeter{ 4 * getSizeOfCurrentArea () };
+        // Perimeter:
+        // 4 * size of area - (count of neighbours of each individual unit) 
 
-        for (size_t neighbours{};  const auto& [row, col] : m_listArea) {
+        size_t perimeter{ 4 * getSizeOfCurrentArea() };
+        size_t neighbours{};
+        char plant{ m_plant + ('a' - 'A') };
 
-            // is there a neighbour above
-            if (row == 0) {
-                neighbours++;
-            }
-            else if (m_garden[row - 1][col] == m_plant) {
-                neighbours++;
-            }
+        for (const auto& [row, col] : m_listArea) {
 
-            // is there a neighbour to the right
-            if (col == Dimension - 1) {
-                neighbours++;
-            }
-            else if (m_garden[row][col + 1] == m_plant) {
+            // is there another neighbour above
+            if (row != 0 && (*m_garden)[row - 1][col] == plant) {
                 neighbours++;
             }
 
-            // is there a neighbour below
-            if (row == Dimension - 1) {
-                neighbours++;
-            }
-            else if (m_garden[row + 1][col] == m_plant) {
+            // is there another neighbour to the right
+            if ((col != Dimension - 1) && (*m_garden)[row][col + 1] == plant) {
                 neighbours++;
             }
 
-            // is there a neighbour to the left
-            if (col == 0) {
-                neighbours++;
-            }
-            else if (m_garden[row][col - 1] == m_plant) {
+            // is there another neighbour below
+            if ((row != Dimension - 1) && (*m_garden)[row + 1][col] == plant) {
                 neighbours++;
             }
 
-            // subtract number of neighbours from perimeter
-            perimeter -= neighbours;
+            // is there another neighbour to the left
+            if (col != 0 && (*m_garden)[row][col - 1] == plant) {
+                neighbours++;
+            }
         }
+
+        // subtract number of neighbours from perimeter
+        perimeter -= neighbours;
 
         return perimeter;
     }
 
     void searchArea(size_t row, size_t col, char plant) {
 
+        m_listArea.clear();
         m_plant = plant;
-
         searchArea(row, col);
+
+        // TEST
+        printArea();
+        size_t size{ getSizeOfCurrentArea() };
+        std::println("  Size: {}", size);
+        size_t perimeter{ getPerimeterOfCurrentArea() };
+        std::println("  Perimeter: {}", perimeter);
     }
 
-    void searchArea(size_t row, size_t col) {
+    void searchAllAreas() {
 
-        std::println("searchArea: {},{}", row, col);
+        m_totalPrice = 0;
 
-        if (m_garden[row][col] == m_plant) {
+        for (size_t row{};  const auto & plantRow : *m_garden) {
+            for (size_t col{}; auto plant : plantRow) {
+                if (std::isupper(plant)) {
 
+                    searchArea(row, col, plant);
 
-            // WEITER ; HIER MUSS EIN KLEINER BUCHSTABE REIN, sonst geht das Flood Fill nicht ....
-            m_garden[row][col] = '0';    // clear this position in the garden 
-            //m_area[row][col] = m_plant;  // set plot in area
-
-            // Alternative: all plant to area list
-            m_listArea.push_back({ row, col });
-
-            // flood fill algorithm
-            if (col + 1 < Dimension) {
-                searchArea(row, col + 1); // bottom
+                    m_totalPrice += (getSizeOfCurrentArea() * getPerimeterOfCurrentArea());
+                }
+                ++col;
             }
-
-            if (col != 0) {
-                searchArea(row, col - 1); // above
-            }
-
-            if (row + 1 < Dimension) {
-                searchArea(row + 1, col); // right
-            }
-
-            if (row != 0) {
-                searchArea(row - 1, col); // left
-            }
+            ++row;
         }
     }
 
@@ -192,6 +175,31 @@ public:
     }
 
 private:
+    void searchArea(size_t row, size_t col) {
+
+        if ((*m_garden)[row][col] == m_plant) {
+
+            (*m_garden)[row][col] += ('a' - 'A');   // modifiy this position in the garden 
+            m_listArea.push_back({ row, col });     // add plot to list of area
+
+            // flood fill algorithm
+            if (col + 1 < Dimension) {
+                searchArea(row, col + 1); // right
+            }
+
+            if (col != 0) {
+                searchArea(row, col - 1); // left
+            }
+
+            if (row + 1 < Dimension) {
+                searchArea(row + 1, col); // below
+            }
+
+            if (row != 0) {
+                searchArea(row - 1, col); // above
+            }
+        }
+    }
 };
 
 
@@ -211,7 +219,7 @@ static void puzzle_12_test_01()
 {
     GardenGroups<4> garden;
     garden.initBoardFromFile(g_filenameTestData);
-    garden.searchArea(0, 0, 'A');
+    garden.searchArea(1, 0, 'B');
     size_t size{ garden.getSizeOfCurrentArea() };
     std::println("Size: {}", size);
     garden.printArea();
@@ -219,12 +227,24 @@ static void puzzle_12_test_01()
     std::println("Perimeter: {}", perimeter);
 }
 
+static void puzzle_12_test_02()
+{
+    GardenGroups<10> garden;
+    garden.initBoardFromFile(g_filenameTestData);
+    garden.searchAllAreas();
+    std::println("Total Price: {}", garden.getTotalPrice());
+}
+
 // ===========================================================================
 // part one
 
 static void puzzle_12_part_one()
 {
-
+    ScopedTimer watch{};
+    GardenGroups<140> garden;
+    garden.initBoardFromFile(g_filenameRealData);
+    garden.searchAllAreas();
+    std::println("Total Price: {}", garden.getTotalPrice());
 }
 
 // ===========================================================================
@@ -240,9 +260,10 @@ static void puzzle_12_part_two()
 
 void puzzle_12()
 {
-    puzzle_12_test_01();
+    //puzzle_12_test_01();
+    puzzle_12_test_02();
 
-    //puzzle_12_part_one();
+    //puzzle_12_part_one();        // expected 1518548
     //puzzle_12_part_two();
 }
 

@@ -74,9 +74,6 @@
     <None Include="Puzzle05_Data.txt">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="Puzzle12_TestData.txt">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="Puzzle12_RealData.txt">
       <Filter>Source Files</Filter>
     </None>
@@ -125,6 +122,9 @@
       <Filter>Source Files</Filter>
     </Text>
     <Text Include="Puzzle11_TestData.txt">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="Puzzle12_TestData.txt">
       <Filter>Source Files</Filter>
     </Text>
   </ItemGroup>

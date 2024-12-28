@@ -144,7 +144,6 @@
     <ClCompile Include="Puzzle10.cpp" />
     <ClCompile Include="Puzzle11.cpp" />
     <ClCompile Include="Puzzle12.cpp" />
-    <None Include="Puzzle12_TestData.txt" />
     <None Include="Puzzle02_Data.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -171,6 +170,7 @@
     <None Include="Puzzle12_RealData.txt">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </None>
+    <Text Include="Puzzle12_TestData.txt" />
     <Text Include="Scratch.txt" />
   </ItemGroup>
   <ItemGroup>
