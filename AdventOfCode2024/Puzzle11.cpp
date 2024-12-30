@@ -5,6 +5,10 @@
 
 // TBD: Die zerlegten Zahlen ebenfalls in eine Map aufnehmen ... dann muss nicht so oft zerlegt werden
 
+// https://advent-of-code.xavd.id/writeups/2024/day/11/
+
+// https://www.reddit.com/r/adventofcode/comments/1hbm0al/2024_day_11_solutions/?rdt=46542
+
 #include "../Logger/ScopedTimer.h"
 
 #include <algorithm>
